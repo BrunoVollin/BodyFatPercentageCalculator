@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de % de Gordura</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script>
+        function calculateBodyFatPercentage() {
+            var waist = parseFloat(document.getElementById("waist").value);
+            var neck = parseFloat(document.getElementById("neck").value);
+            var height = parseFloat(document.getElementById("height").value);
+
+            var logWaistNeck = Math.log10(waist - neck);
+            var logHeight = Math.log10(height);
+
+            var bodyFatPercentage = 495 / (1.0324 - 0.19077 * logWaistNeck + 0.15456 * logHeight) - 450;
+
+            var data = new Date();
+            var timestamp = data.toLocaleString();
+
+            var newEntry = {
+                waist: waist,
+                neck: neck,
+                height: height,
+                bodyFatPercentage: bodyFatPercentage.toFixed(2),
+                timestamp: timestamp,
+                index: data.getTime()
+            };
+
+            var cachedData = JSON.parse(localStorage.getItem("bodyFatData")) || [];
+            cachedData.push(newEntry);
+
+            localStorage.setItem("bodyFatData", JSON.stringify(cachedData));
+
+            showSavedData();
+        }
+
+        function areFieldsEmpty() {
+            var waist = document.getElementById("waist").value;
+            var neck = document.getElementById("neck").value;
+            var height = document.getElementById("height").value;
+
+            if (waist === "" || neck === "" || height === "") {
+                alert("Please fill in all fields.");
+                return true;
+            }
+
+            return false;
+        }
+
+        function showSavedData() {
+            if (areFieldsEmpty()) {
+                return;
+            }
+
+            var cachedData = JSON.parse(localStorage.getItem("bodyFatData")) || [];
+            var dataTable = document.getElementById("dataTable");
+            dataTable.innerHTML = "";
+
+            for (var i = 0; i < cachedData.length; i++) {
+                var entry = cachedData[i];
+
+                var row = document.createElement("tr");
+
+                var waistCell = document.createElement("td");
+                waistCell.textContent = entry.waist + " cm";
+                row.appendChild(waistCell);
+
+                var neckCell = document.createElement("td");
+                neckCell.textContent = entry.neck + " cm";
+                row.appendChild(neckCell);
+
+                var heightCell = document.createElement("td");
+                heightCell.textContent = entry.height + " cm";
+                row.appendChild(heightCell);
+
+                var bodyFatCell = document.createElement("td");
+                bodyFatCell.textContent = entry.bodyFatPercentage + "%";
+                row.appendChild(bodyFatCell);
+
+                var timestampCell = document.createElement("td");
+                timestampCell.textContent = entry.timestamp;
+                row.appendChild(timestampCell);
+
+                var deleteCell = document.createElement("td");
+                var deleteButton = document.createElement("button");
+                deleteButton.innerHTML = `<i class="fas fa-times" data-index="${entry.index}"></i>`;
+                deleteButton.className = "btn btn-sm btn-danger";
+
+                const dateNumber = new Date(entry.timestamp)
+                console.log('🚀->', dateNumber);
+
+                deleteButton.setAttribute("data-index", entry.index);
+                deleteButton.addEventListener("click", deleteEntry);
+                deleteCell.appendChild(deleteButton);
+                row.appendChild(deleteCell);
+
+                dataTable.appendChild(row);
+            }
+        }
+
+        function deleteEntry(event) {
+            var confirmDelete = confirm("Are you sure you want to delete this entry?");
+            if (confirmDelete) {
+                var index = parseInt(event.target.getAttribute("data-index"));
+                var cachedData = JSON.parse(localStorage.getItem("bodyFatData")) || [];
+
+                var dataIndex = cachedData.findIndex(function (entry) {
+                    return entry.index === index;
+                });
+
+                if (dataIndex !== -1) {
+                    cachedData.splice(dataIndex, 1);
+                    localStorage.setItem("bodyFatData", JSON.stringify(cachedData));
+                    showSavedData();
+                } else {
+                    alert("Error deleting entry with index: " + index);
+                }
+            }
+        }
+
+    </script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Body Fat Percentage Calculator</h1>
+        <form>
+            <div class="form-group">
+                <label for="waist">Waist (cm):</label>
+                <input type="number" class="form-control" id="waist" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="neck">Neck (cm):</label>
+                <input type="number" class="form-control" id="neck" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="height">Height (cm):</label>
+                <input type="number" class="form-control" id="height" step="0.01" required>
+            </div>
+            <button type="button" class="btn btn-primary"
+                onclick="if (!areFieldsEmpty()) calculateBodyFatPercentage()">Calculate</button>
+
+        </form>
+        <h2 class="mt-5">Saved Data:</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Waist</th>
+                    <th>Neck</th>
+                    <th>Height</th>
+                    <th>Body Fat %</th>
+                    <th>Timestamp</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="dataTable"></tbody>
+        </table>
+    </div>
+    <script>
+        showSavedData();
+    </script>
+</body>
+
+</html>
